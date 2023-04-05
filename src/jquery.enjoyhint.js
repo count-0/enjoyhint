@@ -666,8 +666,8 @@ CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
 
           //to disable events also within highlighted rectable, simply remove the gap
           if (alsoDisableRect === true) {
-              top = bottom;
-              right = left;
+            top = bottom;
+            right = left;
           }
 
           $top_dis_events
@@ -1007,6 +1007,8 @@ CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
                   customBtnProps.nextButton.text : 'Next');
               that.$prev_btn.html(customBtnProps.prevButton && customBtnProps.prevButton.text ? 
                   customBtnProps.prevButton.text : 'Previous');
+              that.$skip_btn.html(customBtnProps.skipButton && customBtnProps.skipButton.text ? 
+                  customBtnProps.skipButton.text : 'Skip');
             }
 
             that.$prev_btn.css({
@@ -1036,11 +1038,6 @@ CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
               top: ver_button_position
             });
           }, 0)
-
-          that.$close_btn.css({
-            right: 10,
-            top: 10
-          });
 
           that.disableEventsNearRect({
             top: shape_data.top,

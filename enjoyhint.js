@@ -73,23 +73,29 @@
     var lockTouch = function(e) {
       e.preventDefault();
     };
+
+    var hideEnjoy = function () {
+      $body.css({overflow: "auto"});
+      $(document).off("touchmove", lockTouch);
+    }
   
     var destroyEnjoy = function() {
       $(".enjoyhint").remove();
-      $body.css({ overflow: "auto" });
-      $(document).off("touchmove", lockTouch);
+      hideEnjoy();
     };
   
     that.clear = function() {
       var $nextBtn = $(".enjoyhint_next_btn");
       var $skipBtn = $(".enjoyhint_skip_btn");
       var $prevBtn = $(".enjoyhint_prev_btn");
+      var $closeBtn = $(".enjoyhint_close_btn");
 
       $prevBtn.removeClass(that.prevUserClass);
       $nextBtn.removeClass(that.nextUserClass);
-      $nextBtn.text(BTN_NEXT_TEXT);
       $skipBtn.removeClass(that.skipUserClass);
+      $nextBtn.text(BTN_NEXT_TEXT);
       $skipBtn.text(BTN_SKIP_TEXT);
+      $closeBtn.removeClass(that.closeUserClass);
     };
   
     function hideCurrentHint(){
@@ -105,7 +111,7 @@
       if (!(data && data[current_step])) {
         $body.enjoyhint("hide");
         options.onEnd();
-        destroyEnjoy();
+        hideEnjoy();
         return;
       }
       
@@ -209,7 +215,12 @@
           that.clear();
         }, 250);
 
-        var isHintInViewport = $(step_data.selector).get(0).getBoundingClientRect();
+        var stepSelector = $(step_data.selector).get(0);
+        if (stepSelector && stepSelector.clientHeight && stepSelector.clientWidth) {
+          var isHintInViewport = stepSelector.getBoundingClientRect();
+        } else {
+          return console.log("Error: Element position couldn't be reached");
+        }
         if(isHintInViewport.top < 0 || isHintInViewport.bottom > (window.innerHeight || document.documentElement.clientHeight)){
             hideCurrentHint();
             $(options.elementToScroll).scrollTo(step_data.selector, step_data.scrollAnimationSpeed || 250, {offset: -200});
@@ -288,6 +299,13 @@
             $skipBtn.text(step_data.skipButton.text || "Skip");
             that.skipUserClass = step_data.skipButton.className;
           }
+
+          if (step_data.closeButton) {
+            var $closeBtn = $(".enjoyhint_close_btn");
+
+            $closeBtn.addClass(step_data.closeButton.className || "");
+            that.closeUserClass = step_data.closeButton.className;
+          }
   
           if (step_data.event_type) {
             switch (step_data.event_type) {
@@ -361,17 +379,19 @@
             right: step_data.right,
             margin: step_data.margin,
             scroll: step_data.scroll,
+            disableSelector: step_data.disableSelector,
             preventEvents: step_data.preventEvents
           };
 
           var customBtnProps = {
               nextButton: step_data.nextButton,
-              prevButton: step_data.prevButton
+              prevButton: step_data.prevButton,
+              skipButton: step_data.skipButton
           }
 
           if (shape_data.center_x === 0 && shape_data.center_y === 0) {
             $body.enjoyhint("hide");
-            destroyEnjoy();
+            hideEnjoy();
             return console.log("Error: Element position couldn't be reached");
           }
   
@@ -407,7 +427,7 @@
       off(step_data.event);
       $element.off(makeEventName(step_data.event));
   
-      destroyEnjoy();
+      hideEnjoy();
     };
   
     var makeEventName = function(name, is_custom) {
@@ -437,7 +457,7 @@
       false
     );
   
-    that.stop = function() {
+    that.skip = function() {
       skipAll();
     };
   
@@ -455,6 +475,10 @@
     that.resumeScript = function() {
       stepAction();
     };
+
+    that.destroyScript = function () {
+      destroyEnjoy();
+    }
   
     that.setCurrentStep = function(cs) {
       current_step = cs;
@@ -1181,8 +1205,8 @@
 
           //to disable events also within highlighted rectable, simply remove the gap
           if (alsoDisableRect === true) {
-              top = bottom;
-              right = left;
+            top = bottom;
+            right = left;
           }
 
           $top_dis_events
@@ -1519,9 +1543,11 @@
               distance = initial_distance;
               ver_button_position = initial_ver_position;
               that.$next_btn.html(customBtnProps.nextButton && customBtnProps.nextButton.text ? 
-                  customBtnProps.nextButton.text : 'Next');
+                customBtnProps.nextButton.text : 'Next');
               that.$prev_btn.html(customBtnProps.prevButton && customBtnProps.prevButton.text ? 
-                  customBtnProps.prevButton.text : 'Previous');
+                customBtnProps.prevButton.text : 'Previous');
+              that.$skip_btn.html(customBtnProps.skipButton && customBtnProps.skipButton.text ? 
+                customBtnProps.skipButton.text : 'Skip');
             }
 
             that.$prev_btn.css({
@@ -1552,17 +1578,12 @@
             });
           }, 0)
 
-          that.$close_btn.css({
-            right: 10,
-            top: 10
-          });
-
           that.disableEventsNearRect({
             top: shape_data.top,
             bottom: shape_data.bottom,
             left: shape_data.left,
             right: shape_data.right
-          }, data.preventEvents);
+                    }, data.disableSelector);
 
           that.renderArrow({
             x_from: x_from,
